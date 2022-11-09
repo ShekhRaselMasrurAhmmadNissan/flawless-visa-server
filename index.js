@@ -21,6 +21,9 @@ const run = async () => {
 		const ServicesCollection = client
 			.db('Flawless-Visa')
 			.collection('Services');
+		const ReviewsCollection = client
+			.db('Flawless-Visa')
+			.collection('Reviews');
 
 		app.get('/', async (req, res) => {
 			res.send('Flawless Visa server is running.');
@@ -49,6 +52,18 @@ const run = async () => {
 			const query = { _id: ObjectId(id) };
 			const response = await ServicesCollection.findOne(query);
 			res.send(response);
+		});
+
+		/**
+		 * Reviews Section
+		 */
+		app.post('/reviews/:id', async (req, res) => {
+			const serviceId = req.params.id;
+			const reviewDetails = req.body;
+			// const service = ObjectId(serviceId);
+			const review = { ...reviewDetails, serviceId };
+			const result = await ReviewsCollection.insertOne(review);
+			res.send(result);
 		});
 	} catch (error) {
 		console.error(error.name, error.message, error.stack);
