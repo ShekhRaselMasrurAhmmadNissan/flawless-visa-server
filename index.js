@@ -15,14 +15,38 @@ const client = new MongoClient(uri, {
 	useUnifiedTopology: true,
 	serverApi: ServerApiVersion.v1,
 });
-console.log(uri);
 
 const run = async () => {
-	// const ServicesCollection = client.db('Flawless-Visa').collect;
+	try {
+		const ServicesCollection = client
+			.db('Flawless-Visa')
+			.collection('Services');
 
-	app.get('/', async (req, res) => {
-		res.send('Flawless Visa server is running.');
-	});
+		app.get('/', async (req, res) => {
+			res.send('Flawless Visa server is running.');
+		});
+
+		app.get('/services', async (req, res) => {
+			const query = {};
+			let services;
+			if (req.query.limit) {
+				const length = parseInt(req.query.limit);
+				services = await ServicesCollection.find(query)
+					.sort({ _id: -1 })
+					.limit(length)
+					.toArray();
+			} else {
+				services = await ServicesCollection.find(query)
+					.sort({ _id: -1 })
+					.toArray();
+			}
+
+			res.send(services);
+		});
+	} catch (error) {
+		console.error(error.name, error.message, error.stack);
+	} finally {
+	}
 };
 
 run().catch((error) => console.error(error.name, error.message, error.stack));
