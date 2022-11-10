@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
@@ -16,6 +18,21 @@ const client = new MongoClient(uri, {
 	serverApi: ServerApiVersion.v1,
 });
 
+const verifyJWT = (req, res, next) => {
+	const authHeader = req.headers.authorization;
+	if (!authHeader) {
+		return res.status(401).send({ message: 'Unauthorized User' });
+	}
+	const token = authHeader.split(' ')[1];
+	jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+		if (err) {
+			return res.status(401).send({ message: 'Unauthorized User' });
+		}
+		req.decoded = decoded;
+		next();
+	});
+};
+
 const run = async () => {
 	try {
 		const ServicesCollection = client
@@ -29,6 +46,20 @@ const run = async () => {
 			res.send('Flawless Visa server is running.');
 		});
 
+		/**
+		 * JWT
+		 */
+		app.post('/jwt', async (req, res) => {
+			const user = req.body;
+			const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+				expiresIn: '1h',
+			});
+			res.send({ token });
+		});
+
+		/**
+		 * Services Section
+		 */
 		app.get('/services', async (req, res) => {
 			const query = {};
 			let services;
@@ -72,7 +103,12 @@ const run = async () => {
 			res.send(reviews);
 		});
 
-		app.get('/userReviews', async (req, res) => {
+		app.get('/userReviews', verifyJWT, async (req, res) => {
+			const decoded = req.decoded;
+			console.log('Inside Reviews:', decoded);
+			if (decoded.email !== req.query.email) {
+				return res.status(403).send({ message: 'Unauthorized User' });
+			}
 			let query = {};
 			if (req.query.email) {
 				query = { userEmail: req.query.email };
@@ -91,6 +127,14 @@ const run = async () => {
 			const review = { ...reviewDetails, serviceId };
 			const result = await ReviewsCollection.insertOne(review);
 			res.send(result);
+		});
+
+		app.delete('/reviews/:id', verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const query = { _id: ObjectId(id) };
+
+			const response = await ReviewsCollection.deleteOne(query);
+			res.send(response);
 		});
 	} catch (error) {
 		console.error(error.name, error.message, error.stack);
