@@ -129,6 +129,14 @@ const run = async () => {
 			res.send(result);
 		});
 
+		app.get('/singleReview/:id', verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const query = { _id: ObjectId(id) };
+
+			const response = await ReviewsCollection.findOne(query);
+			res.send(response);
+		});
+
 		app.delete('/reviews/:id', verifyJWT, async (req, res) => {
 			const id = req.params.id;
 			const query = { _id: ObjectId(id) };
