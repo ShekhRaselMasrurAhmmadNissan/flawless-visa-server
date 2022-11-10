@@ -72,6 +72,18 @@ const run = async () => {
 			res.send(reviews);
 		});
 
+		app.get('/userReviews', async (req, res) => {
+			let query = {};
+			if (req.query.email) {
+				query = { userEmail: req.query.email };
+			}
+
+			const reviews = await ReviewsCollection.find(query, {
+				sort: { createdAt: -1 },
+			}).toArray();
+			res.send(reviews);
+		});
+
 		app.post('/reviews/:id', async (req, res) => {
 			const serviceId = req.params.id;
 			const reviewDetails = req.body;
